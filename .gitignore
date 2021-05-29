@@ -66,14 +66,15 @@ scripts/user/user_preferences.cfg
 program.mk
 board.mk
 
+#This folder's are specifict for firmware_v3
 
 .vscode/
-libs/
-scripts/
-templates/
-test/
-.settings/
-documentation/
-examples/
-templates/
+#libs/
+#scripts/
+#templates/
+#test/
+#.settings/
+#documentation/
+#examples/
+#templates/
 
