@@ -1,15 +1,7 @@
-/*=============================================================================
- * Copyright (c) 2021, Franco Bucafusco <franco_bucafusco@yahoo.com.ar>
- * 					   Martin N. Menendez <mmenendez@fi.uba.ar>
- * All rights reserved.
- * License: Free
- * Date: 2021/10/03
- * Version: v1.2
- *===========================================================================*/
-
 #ifndef KEYS_H_
 #define KEYS_H_
 
+/* Include header files*/
 #include "FreeRTOS.h"
 #include "task.h"
 #include "semphr.h"
@@ -19,6 +11,8 @@
 /* public macros ================================================================= */
 #define KEYS_INVALID_TIME   -1
 /* types ================================================================= */
+
+/* Debouncing corrector states   */
 typedef enum
 {
     STATE_BUTTON_UP,
@@ -27,9 +21,10 @@ typedef enum
     STATE_BUTTON_RISING
 } keys_ButtonState_t;
 
+/* Structure for switch */
 typedef struct
 {
-    gpioMap_t tecla;			//config
+    gpioMap_t tecla;	//config
 } t_key_config;
 
 typedef struct
@@ -44,8 +39,19 @@ typedef struct
 } t_key_data;
 
 /* methods ================================================================= */
+
+/* Initialization of gpios */
+void gpio_init( void );
 void keys_Init( void );
-TickType_t get_diff( uint32_t index );
-void clear_diff( uint32_t index );
+
+/* Declaration of time functions */
+TickType_t get_diff();
+void clear_diff();
+
+/* task function prototypes */
+void tarea_led( void* taskParmPtr );
+void tarea_tecla( void* taskParmPtr );
+
+
 
 #endif /* PDM_ANTIRREBOTE_MEF_INC_DEBOUNCE_H_ */

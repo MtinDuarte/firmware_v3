@@ -1,22 +1,17 @@
-/*=============================================================================
- * Copyright (c) 2021, Franco Bucafusco <franco_bucafusco@yahoo.com.ar>
- * 					   Martin N. Menendez <mmenendez@fi.uba.ar>
- * All rights reserved.
- * License: Free
- * Date: 2021/10/03
- * Version: v1.2
- *===========================================================================*/
-
 /*==================[ Inclusions ]============================================*/
 #include "keys.h"
+
 /*=====[ Definitions of private data types ]===================================*/
 const t_key_config  keys_config[] = { TEC1 };
+#define KEY_COUNT 1
 
-#define KEY_COUNT   sizeof(keys_config)/sizeof(keys_config[0])
 /*=====[Definition macros of private constants]==============================*/
+/* Debounce time to 40 ms  */
 #define DEBOUNCE_TIME   40
+/* Convert 40ms to ticks   */
 #define DEBOUNCE_TIME_MS pdMS_TO_TICKS(DEBOUNCE_TIME)
 /*=====[Prototypes (declarations) of private functions]======================*/
+
 
 static void keys_ButtonError( uint32_t index );
 static void buttonPressed( uint32_t index );
@@ -51,27 +46,27 @@ void clear_diff( uint32_t index )
 
 void keys_Init( void )
 {
-    BaseType_t res;
-    uint32_t i;
-
-    for ( i = 0 ; i < KEY_COUNT ; i++ )
+    for (uint32_t i = 0 ; i < KEY_COUNT ; i++ )
     {
-        keys_data[i].state          = BUTTON_UP;  // Set initial state
+       /* Initialization states  */
+        keys_data[i].state          = BUTTON_UP;  
         keys_data[i].time_down      = KEYS_INVALID_TIME;
         keys_data[i].time_up        = KEYS_INVALID_TIME;
         keys_data[i].time_diff      = KEYS_INVALID_TIME;
     }
-    // Crear tareas en freeRTOS
+    
+    BaseType_t res;
+    // Create a task
     res = xTaskCreate (
-              task_tecla,					// Funcion de la tarea a ejecutar
-              ( const char * )"task_tecla",	// Nombre de la tarea como String amigable para el usuario
-              configMINIMAL_STACK_SIZE*2,	// Cantidad de stack de la tarea
-              0,							// Parametros de tarea
-              tskIDLE_PRIORITY+1,			// Prioridad de la tarea
-              0							// Puntero a la tarea creada en el sistema
+              task_tecla,					      // -> void (* pFunction)(void)      <- | Void pointer to function |
+              ( const char * )"task_tecla",	// -> (const char *) "string"       <-
+              configMINIMAL_STACK_SIZE*2,	   // -> Stack necessary for the task  <-   
+              0,							         // -> Parameters of the task        <- No need of parameters
+              tskIDLE_PRIORITY+1,			   // -> Priority of the task          <-
+              0							         // -> Pointer to the task           <-
           );
 
-    // Gestión de errores
+    /*   Verify if the task was correctly created. */
     configASSERT( res == pdPASS );
 }
 
@@ -141,19 +136,19 @@ void keys_Update( uint32_t index )
     }
 }
 
-/*=====[Implementations of private functions]================================*/
+/* Do this if the key was pressed   */
 
-/* accion de el evento de tecla pulsada */
 static void buttonPressed( uint32_t index )
 {
     TickType_t current_tick_count = xTaskGetTickCount();
-
+    
+   /*   Secure current tick count assign */
     taskENTER_CRITICAL();
     keys_data[index].time_down = current_tick_count;
     taskEXIT_CRITICAL();
 }
 
-/* accion de el evento de tecla liberada */
+   /* Button released function   */
 static void buttonReleased( uint32_t index )
 {
     TickType_t current_tick_count = xTaskGetTickCount();
@@ -163,6 +158,7 @@ static void buttonReleased( uint32_t index )
     keys_data[index].time_diff  = keys_data[index].time_up - keys_data[index].time_down;
     taskEXIT_CRITICAL();
 
+    /*   If any key was pressed for a time more than 0, give semaphore .   */
     if ( keys_data[index].time_diff  > 0 )
     {
         xSemaphoreGive( sem_btn );

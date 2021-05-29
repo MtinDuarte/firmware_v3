@@ -1,152 +1,160 @@
-/*=============================================================================
- * Copyright (c) 2021, Franco Bucafusco <franco_bucafusco@yahoo.com.ar>
- * 					   Martin N. Menendez <mmenendez@fi.uba.ar>
- * All rights reserved.
- * License: Free
- * Date: 2021/10/03
- * Version: v1.2
- *===========================================================================*/
-
-/*==================[inclusiones]============================================*/
+/*==================[inclusions]============================================*/
 #include "FreeRTOS.h"
 #include "task.h"
 #include "semphr.h"
 
-#include "sapi.h"
 
+/* Header files of this project*/
 #include "FreeRTOSConfig.h"
 #include "keys.h"
+#include "sapi.h"
+
 /*==================[definiciones y macros]==================================*/
+/* Rate in miliseconds  */
 #define RATE 1000
+
+/* Conversion from ms to ticks   */
 #define LED_RATE pdMS_TO_TICKS(RATE)
 
-#define N_SEM 			1
-#define WELCOME_MSG  "Ejercicio D_3.\r\n"
+
+//#define N_SEM 			1
+#define WELCOME_MSG  "Ejercicio D_4 - Martin Duarte.\r\n"
 #define USED_UART UART_USB
 #define UART_RATE 115200
 #define MALLOC_ERROR "Malloc Failed Hook!\n"
 #define MSG_ERROR_SEM "Error al crear los semaforos.\r\n"
 #define LED_ERROR LEDR
-/*==================[definiciones de datos internos]=========================*/
-gpioMap_t leds_t[] = {LEDR,LEDG};//,LED2,LED3};
-gpioMap_t gpio_t[] = {GPIO7}; //,GPIO5,GPIO3,GPIO1};
+
+
+#define LED_COUNT 1
+/* Global array's of leds and GPIO for logic analyzer */
+
+gpioMap_t leds_t[] = {LEDG,LED_ERROR};//,LED2,LED3};
+gpioMap_t gpio_t[] = {GPIO7,GPIO5}; //,GPIO3,GPIO1};
+
+/* Instance semaphore */
 SemaphoreHandle_t sem_btn;
+
 /*==================[definiciones de datos externos]=========================*/
+
+/* Enable debugging interface*/
 DEBUG_PRINT_ENABLE;
 
+/* Pointer to t_key_config structure */
 extern t_key_config* keys_config;
 
-#define LED_COUNT   sizeof(keys_config)/sizeof(keys_config[0])
-/*==================[declaraciones de funciones internas]====================*/
-void gpio_init( void );
-/*==================[declaraciones de funciones externas]====================*/
-TickType_t get_diff();
-void clear_diff();
 
-// Prototipo de funcion de la tarea
-void tarea_led( void* taskParmPtr );
-void tarea_tecla( void* taskParmPtr );
-
-/*==================[funcion principal]======================================*/
-
-// FUNCION PRINCIPAL, PUNTO DE ENTRADA AL PROGRAMA LUEGO DE ENCENDIDO O RESET.
 int main( void )
 {
-    // ---------- CONFIGURACIONES ------------------------------
-    boardConfig();									// Inicializar y configurar la plataforma
+    /*   Initialization of the board   */
+    boardConfig();		
 
+    /*   Initialization of gpio's*/
     gpio_init();
 
-    debugPrintConfigUart( USED_UART, UART_RATE );		// UART for debug messages
+    /*   Configure UART interface   */
+    debugPrintConfigUart( USED_UART, UART_RATE );	
+    /*   Print welcome message   */
     printf( WELCOME_MSG );
 
+    /*   Creation of status variable for assert verification  */
     BaseType_t res;
-    uint32_t i;
 
-    // Crear tarea en freeRTOS
-    for ( i = 0 ; i < LED_COUNT ; i++ )
+    /*   Task creation  */
+   
+    for (uint32_t i = 0 ; i < LED_COUNT ; i++ )
     {
         res = xTaskCreate(
-                  tarea_led,                     // Funcion de la tarea a ejecutar
-                  ( const char * )"tarea_led",   // Nombre de la tarea como String amigable para el usuario
-                  configMINIMAL_STACK_SIZE*2, // Cantidad de stack de la tarea
-                  i,                          // Parametros de tarea
-                  tskIDLE_PRIORITY+1,         // Prioridad de la tarea
-                  0                           // Puntero a la tarea creada en el sistema
+                  tarea_led,                    // -> void (* pFunction)(void)      <- | Void pointer to function |
+                  ( const char * )"tarea_led",  // -> (const char *) "string"       <-
+                  configMINIMAL_STACK_SIZE*2,   // -> Stack necessary for the task  <-
+                  (uint32_t *)i,                // -> Parameters of the task        <- It's force to cast an int
+                  tskIDLE_PRIORITY+1,           // -> Priority of the task          <- 
+                  0                             // -> Pointer to created function   <- No need.
               );
 
-        // Gestion de errores
+        /* If the task was correctly created, same as while (0), if any error ocurred during task creation, behave as while (1)  */
+       
         configASSERT( res == pdPASS );
     }
 
-    // Inicializo driver de teclas
+    /*   Initialization of keys */
     keys_Init();
 
-    // Crear semaforo
+    /*   Create binarty semaphore   */
     sem_btn = xSemaphoreCreateBinary();
 
-    // Gestion de errores de semaforos
+    /*Assert for semaphore creation */
     configASSERT( sem_btn !=  NULL  );
 
-    // Iniciar scheduler
+    /*   Start scheduler   */
+    /* This means: 
+      -Turn on Systick.
+      -Check for created task.
+      -Set idle task and set ready to the corresponding tasks.
+      -Check which task has highest priority */
     vTaskStartScheduler();					// Enciende tick | Crea idle y pone en ready | Evalua las tareas creadas | Prioridad mas alta pasa a running
 
-    // ---------- REPETIR POR SIEMPRE --------------------------
+
     configASSERT( 0 );
 
-    // NO DEBE LLEGAR NUNCA AQUI, debido a que a este programa se ejecuta
-    // directamenteno sobre un microcontroladore y no es llamado por ningun
-    // Sistema Operativo, como en el caso de un programa para PC.
     return TRUE;
 }
 
-/*==================[definiciones de funciones internas]=====================*/
 void gpio_init( void )
 {
-    uint32_t i;
-
-    for( i = 0 ; i < LED_COUNT; i++ )
+    
+    for( uint32_t i = 0 ; i < LED_COUNT; i++ )
     {
         gpioInit ( gpio_t[i], GPIO_OUTPUT );
     }
 }
-/*==================[definiciones de funciones externas]=====================*/
 
-// Implementacion de funcion de la tarea
+
+/* Implementation of led task */
+
 void tarea_led( void* taskParmPtr )
 {
+    /*   Cast incoming parameter pointer to uint32_t index  */
     uint32_t index = ( uint32_t ) taskParmPtr;
 
-    // ---------- CONFIGURACIONES ------------------------------
-    TickType_t xPeriodicity = LED_RATE; // Tarea periodica cada 1000 ms
+
+    /*   Define the periodicity of led toggle   */
+   
+    TickType_t xPeriodicity = LED_RATE; 
+   
+    /*   Start LastWake time tick variable      */
     TickType_t xLastWakeTime = xTaskGetTickCount();
-    //TickType_t dif;
-    // ---------- REPETIR POR SIEMPRE --------------------------
+   
+    
     while( TRUE )
     {
-
-    	if ( xSemaphoreTake( sem_btn, 1 ) == pdFALSE )
+       /*   Verify if semaphore was taken with no block time needed  */
+    	if ( xSemaphoreTake( sem_btn, 0 ) == pdTRUE )
     	{
-    	gpioWrite( leds_t[0], ON );
-		gpioWrite( gpio_t[0], ON );
-        vTaskDelay( LED_RATE/4 );
-        gpioWrite( gpio_t[0], OFF );
-    	gpioWrite( leds_t[0], OFF );
+         /* Turn ON led GREEN & GPIO7 for 1/4 of LED_RATE  = 250ms   */
+    	 gpioWrite( leds_t[0], ON );
+		 gpioWrite( gpio_t[0], ON );
+       vTaskDelay( LED_RATE/4 );
+       gpioWrite( gpio_t[0], OFF );
+    	 gpioWrite( leds_t[0], OFF );
     	}
     	else
     	{
-        gpioWrite( leds_t[1], ON );
-        gpioWrite( gpio_t[1], ON );
-        vTaskDelay( LED_RATE/4 );
-        gpioWrite( gpio_t[1], OFF );
-    	gpioWrite( leds_t[1], OFF );
+       /* Turn ON led RED & GPIO5 for 1/4 of LED_RATE  = 250ms   */
+       gpioWrite( leds_t[1], ON );
+       gpioWrite( gpio_t[1], ON );
+       vTaskDelay( LED_RATE/4 );
+       gpioWrite( gpio_t[1], OFF );
+    	 gpioWrite( leds_t[1], OFF );
     	}
-    	vTaskDelayUntil(&xLastWakeTime,xPeriodicity);
+    	
+      vTaskDelayUntil(&xLastWakeTime,xPeriodicity);
 
     }
 }
 
-/* hook que se ejecuta si al necesitar un objeto dinamico, no hay memoria disponible */
+   /* No need of malloc failed hook function */
 void vApplicationMallocFailedHook()
 {
     printf( MALLOC_ERROR );
