@@ -1,3 +1,14 @@
+/*=============================================================================
+ * Copyright (c) 2021, Martin Duarte <duartemartn@gmail.com>
+ * 					   
+ * All rights reserved.
+ * License: Free
+ * Date: XX/XX/XXXX
+ * Version: v1.0
+ *===========================================================================*/
+
+
+
 #include "keys.h"
 
 /* Define the number of TASKS adjusted for the execution of the project.*/
