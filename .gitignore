@@ -65,3 +65,11 @@ _programs/
 scripts/user/user_preferences.cfg
 program.mk
 board.mk
+
+
+.vscode/
+libs/
+scripts/
+templates/
+test/
+.settings/}}}
