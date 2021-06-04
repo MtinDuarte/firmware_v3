@@ -3,9 +3,9 @@
 /*=====[Definitions of public global variables]==============================*/
 
 keys_ButtonState_t state;        /* Initialization of button state variable   */
-tick_t time_down;                //timestamp of the last High to Low transition of the key
-tick_t time_up;		            //timestamp of the last Low to High transition of the key
-tick_t time_diff;	               //last time difference
+tick_t time_down;                /* timestamp of the last High to Low transition of the key */
+tick_t time_up;		            /* timestamp of the last Low to High transition of the key */
+tick_t time_diff;	               /* last time difference */
 
 const gpioMap_t tecla = TEC1;
 
@@ -38,7 +38,7 @@ void keys_init( void )
 
 uint32_t  keys_update( )
 {
-    uint32_t event = KEYS_EVENT_NONE;
+    event = KEYS_EVENT_NONE;
 
     switch( state )
     {
