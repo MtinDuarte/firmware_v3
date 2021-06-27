@@ -3,7 +3,7 @@
 
 WEAK void IntDefaultHandler(void);
 
-#if __CORTEX_M == 0U
+#if 0 //__CORTEX_M == 0U
 void RTC_IRQHandler(void) ALIAS(IntDefaultHandler);
 void M4_IRQHandler(void) ALIAS(IntDefaultHandler);
 void DMA_IRQHandler(void) ALIAS(IntDefaultHandler);
@@ -30,6 +30,7 @@ void EVRT_IRQHandler(void) ALIAS(IntDefaultHandler);
 void UART0_IRQHandler(void) ALIAS(IntDefaultHandler);
 void UART1_IRQHandler(void) ALIAS(IntDefaultHandler);
 void UART2_CAN1_IRQHandler(void) ALIAS(IntDefaultHandler);
+void UART2_IRQHandler(void) ALIAS(IntDefaultHandler);
 void UART3_IRQHandler(void) ALIAS(IntDefaultHandler);
 void I2S0_I2S1_QEI_IRQHandler(void) ALIAS(IntDefaultHandler);
 void CAN0_IRQHandler(void) ALIAS(IntDefaultHandler);
@@ -66,7 +67,8 @@ void (* const g_pfnVendorVectors[])(void) = {
     EVRT_IRQHandler,                // 39 Event Router
     UART0_IRQHandler,               // 40 UART0
     UART1_IRQHandler,               // 41 UART1
-    UART2_CAN1_IRQHandler,          // 42 ORed USART2 and C_CAN1
+    //UART2_CAN1_IRQHandler,          // 42 ORed USART2 and C_CAN1
+	UART2_IRQHandler,               // 42 UART2
     UART3_IRQHandler,               // 43 USRT3
     I2S0_I2S1_QEI_IRQHandler,       // 44 ORed I2S0, I2S1, QEI
     CAN0_IRQHandler,                // 45 C_CAN0
@@ -155,7 +157,7 @@ void (* const g_pfnVendorVectors[])(void) = {
     SSP1_IRQHandler,          // 39
     UART0_IRQHandler,         // 40
     UART1_IRQHandler,         // 41
-    UART2_IRQHandler,         // 42
+	UART2_IRQHandler,         // 42
     UART3_IRQHandler,         // 43
     I2S0_IRQHandler,          // 44
     I2S1_IRQHandler,          // 45
